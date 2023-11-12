@@ -1,0 +1,5 @@
+build/**
+exercise/**
+.cache/**
+cmake/**
+.vscode/**
