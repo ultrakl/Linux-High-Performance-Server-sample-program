@@ -1,7 +1,5 @@
 //10-3 用sigurg检测带外数据是否到达
 
-//love that
-
 #include <sys/syslog.h>
 #include<unistd.h>
 #include<netinet/in.h>
