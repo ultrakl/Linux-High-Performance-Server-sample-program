@@ -110,6 +110,25 @@ http_conn::LINE_STATUS http_conn::parse_line() {
     return LINE_OPEN;
 }
 
+bool http_conn::read() {
+    if(m_read_idx >= READ_BUFFER_SIZE) {
+        return false;
+    }
+    int bytes_read = 0;
+    while(true) {
+        bytes_read = recv(m_sockfd, m_read_buf + m_read_idx, READ_BUFFER_SIZE - m_read_idx, 0);
+        if(bytes_read == -1) {
+            if(errno == EAGAIN || errno == EWOULDBLOCK) break;
+            return false;
+        }
+        else if (bytes_read  == 0) {
+            return false;
+        }
+        m_read_idx += bytes_read;
+    }
+    return true;
+}
+
 /*解析请求行*/
 http_conn::HTTP_CODE http_conn::parse_request_line(char* text) {
     m_url = strpbrk(text, " \t");
@@ -145,6 +164,7 @@ http_conn::HTTP_CODE http_conn::parse_request_line(char* text) {
 
 http_conn::HTTP_CODE http_conn::parse_headers(char* text) {
     if(text[0] == '\0') {
+        /*如果有http消息体，则还需要读取m_content_length字节的消息*/
         if(m_content_length != 0) {
             m_check_state = CHECK_STATE_CONTENT;
             return NO_REQUEST;
@@ -291,8 +311,12 @@ bool http_conn::add_response(const char* format, ...) {
     if(m_write_idx >= WRITE_BUFFER_SIZE) {
         return false;
     }
+    /*variable arguments list, 该list应该由va_start初始化， 由va_end释放*/
     va_list arg_list;
+    /*inital variable args list with args after format*/
     va_start(arg_list, format);
+    /*组成一个字符串，其中包含在printf使用format时将打印的文本，但使用arg标识的变量参数列表中的元素，
+    而不是其他函数参数，并将结果内容作为C字符串存储在s指向的缓冲区中。*/
     int len = vsnprintf(m_write_buf, WRITE_BUFFER_SIZE - 1 - m_write_idx, format, arg_list);
     if(len >= (WRITE_BUFFER_SIZE - 1 - m_write_idx)) return false;
     m_write_idx += len;
@@ -406,5 +430,6 @@ void http_conn::process() {
     if(!write_ret) {
         close_conn();
     }
+    //逻辑单元处理之后注册写就绪事件
     modfd(m_epollfd, m_sockfd, EPOLLOUT);
 }

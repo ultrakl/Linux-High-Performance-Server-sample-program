@@ -1,3 +1,7 @@
+/*设计优点：实现了半同步/半反应堆模式的服务器，并且通过信号量和共享队列解除了主线程和工作线程的耦合关系，通用性更强
+主线程需要负责监听和IO读写，子进程需要负责响应客户数据
+实现缺点： 每个线程同时间只能处理一个客户连接，并且由于同一个客户连接可能被不同的线程处理，需要保持连接的无状态，
+而且由于对共享队列频繁的加锁解锁操作，导致耗费的cpu时间变多*/
 #ifndef THREADPOOL_H
 #define THREADPOOL_H
 
@@ -40,6 +44,7 @@ threadpool<T>::threadpool(int thread_number, int max_requests)
         }
         for(int i = 0; i < thread_number; i++) {
             printf("create the %dth thread\n");
+            /*pthread_create只能绑定静态函数*/
             if(pthread_create(m_threads[i], NULL, worker, this) != 0) {
                 delete [] m_threads;
                 throw std::exception();
@@ -92,6 +97,6 @@ void threadpool<T>::run() {
         if(!request) continue;
         request->process();
     }
-    
+
 }
 #endif

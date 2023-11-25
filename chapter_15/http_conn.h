@@ -54,8 +54,8 @@ class http_conn {
     };
     enum LINE_STATUS { LINE_OK = 0, LINE_BAD, LINE_OPEN };
   public:
-    http_conn() {}
-    ~http_conn() {}
+    http_conn() = default;
+    ~http_conn() = default;
   public:
     void init(int sockfd, const sockaddr_in& addr);
     /*关闭连接*/
