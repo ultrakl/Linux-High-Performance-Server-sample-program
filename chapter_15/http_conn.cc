@@ -20,7 +20,7 @@ int setnonblocking(int fd)
     return old_option;
 }
 
-void addfd(int fd, int epollfd, bool one_shot)
+void addfd(int epollfd, int fd, bool one_shot)
 {
     epoll_event event;
     event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
@@ -317,7 +317,7 @@ bool http_conn::add_response(const char* format, ...) {
     va_start(arg_list, format);
     /*组成一个字符串，其中包含在printf使用format时将打印的文本，但使用arg标识的变量参数列表中的元素，
     而不是其他函数参数，并将结果内容作为C字符串存储在s指向的缓冲区中。*/
-    int len = vsnprintf(m_write_buf, WRITE_BUFFER_SIZE - 1 - m_write_idx, format, arg_list);
+    int len = vsnprintf(m_write_buf + m_write_idx, WRITE_BUFFER_SIZE - 1 - m_write_idx, format, arg_list);
     if(len >= (WRITE_BUFFER_SIZE - 1 - m_write_idx)) return false;
     m_write_idx += len;
     va_end(arg_list);
@@ -332,6 +332,7 @@ bool http_conn::add_headers(int content_len) {
     add_content_length(content_len);
     add_linger();
     add_blank_line();
+    return true;
 }
 
 bool http_conn::add_content_length(int content_len) {
@@ -423,6 +424,7 @@ bool http_conn::process_write(HTTP_CODE ret) {
 void http_conn::process() {
     HTTP_CODE read_ret = process_read();
     if(read_ret == NO_REQUEST) {
+        printf("request not complete, need to read more!\n");
         modfd(m_epollfd, m_sockfd, EPOLLIN);
         return;
     }

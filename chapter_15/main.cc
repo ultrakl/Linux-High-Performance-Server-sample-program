@@ -62,10 +62,11 @@ int main(int argc, char* argv[]) {
     assert(epollfd != -1);
     addfd(epollfd, listenfd, false);
     http_conn::m_epollfd = epollfd;
-
+    printf("start epoll\n");
     while(true) {
         int number = epoll_wait(epollfd, events, MAX_EVENT_NUMBER, -1);
-        if(number < 0 && errno != EINTR) {
+        printf("epoll end\n");
+        if((number <= 0)&& (errno != EINTR)) {
             printf("epoll failure\n");
             break;
         }
@@ -76,7 +77,7 @@ int main(int argc, char* argv[]) {
                 struct sockaddr_in client_address;
                 socklen_t client_address_length = sizeof(sockaddr_in);
                 int connfd = accept(listenfd, (struct sockaddr*)&client_address, &client_address_length);
-
+                printf("accept a new connection\n");
                 if(connfd < 0) {
                     printf("errno is: %d\n", errno);
                     continue;
@@ -86,7 +87,8 @@ int main(int argc, char* argv[]) {
                     show_error(connfd, "Internal server busy");
                     continue;
                 }
-                users[connfd].init(connfd, client_address); 
+                users[connfd].init(connfd, client_address);
+                printf("socket %d initial complete!\n", connfd); 
             }
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
                 users[sockfd].close_conn();

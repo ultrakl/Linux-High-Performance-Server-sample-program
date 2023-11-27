@@ -43,9 +43,9 @@ threadpool<T>::threadpool(int thread_number, int max_requests)
             throw std::exception();
         }
         for(int i = 0; i < thread_number; i++) {
-            printf("create the %dth thread\n");
+            printf("create the %dth thread\n", i);
             /*pthread_create只能绑定静态函数*/
-            if(pthread_create(m_threads[i], NULL, worker, this) != 0) {
+            if(pthread_create(&m_threads[i], NULL, worker, this) != 0) {
                 delete [] m_threads;
                 throw std::exception();
             }
@@ -65,6 +65,7 @@ threadpool<T>::~threadpool() {
 template <typename T>
 bool threadpool<T>::append(T* request) {
     m_queuelocker.lock();
+    printf("get up threads!\n");
     if (m_workqueue.size() >= m_max_requests) {
         m_queuelocker.unlock();
         return false;
@@ -96,6 +97,7 @@ void threadpool<T>::run() {
         m_queuelocker.unlock();
         if(!request) continue;
         request->process();
+        printf("process over!\n");
     }
 
 }
